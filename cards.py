@@ -1,18 +1,7 @@
 import random
 
-class Table(object):
-    def __init__(self):
-        self.card = []
 
-    def setCard(self, card):
-        self.card.append(card)
 
-    def getCard(self):
-        return self.card
-
-    def showTable(self):
-        for i in self.card:
-            i.show()
 
 class Card(object):
     def __init__(self,suit,val,mana,health, attack):
@@ -35,10 +24,11 @@ class Card(object):
     def setAttack(self, attack):
         self.attack = attack
 
+    def getCards(self):
+        return self
 
-    def attack(card1, card2):
-        card1.health -= card2.getAttack
-        card2.health -= card1.getAttack
+
+
 
 
     def show(self):
@@ -46,11 +36,12 @@ class Card(object):
 
 class Deck(object):
     def __init__(self):
-        self.cards = []
+        self.cards = {}
         self.build()
     def build(self):
-        for s in ("Spades", "Clubs", "Diamonds", "Hearts"):
+        for s in ("S", "C", "D", "H"):
             for v in range (1,14):
+
                 if v == 2 or v == 7 or v == 12:
                     mana = 2
                     attack = 1
@@ -75,25 +66,65 @@ class Deck(object):
                     attack = 5
                     health = 5
 
-                self.cards.append(Card(s, v, mana,health,attack))
+                self.cards[s + str(v)]=Card(s, v, mana,health,attack)
+
 
 
     def show(self):
-        for c in self.cards:
-            c.show()
+        for k,v in self.cards.iteritems():
+            v.show()
 
-    def shuffle(self):
-        for i in range(len(self.cards)-1, 0, -1):
-            r = random.randint(0,i)
-            self.cards[i], self.cards[r] = self.cards[r], self.cards[i]
+
+    def shuffle2(self):
+
+        keys =  list(self.cards.keys())
+        random.shuffle(keys)
+        [(key, self.cards[key]) for key in keys]
+
+
+
+#    def shuffle(self):
+#        for i in range(len(self.cards)-1, 0, -1):
+#            r = random.randint(0,i)
+#            self.cards[i], self.cards[r] = self.cards[r], self.cards[i]
 
     def drawCard(self):
-        return self.cards.pop()
+        d = {}
+        randomChoice = random.choice(self.cards.keys())
+        value = self.cards[randomChoice]
+        self.cards.pop(randomChoice)
+
+        d = {randomChoice:value}
+        return d
+class Table(object):
+    def __init__(self):
+        self.cards = {}
+
+    def removeCards(self, cards):
+
+        for key in cards.keys():
+            del self.cards[key]
+
+
+    def addCard(self, card):
+        self.cards.update(card)
+
+    def getCards(self):
+
+        return self.cards
+
+    def getCard(self,card):
+        return self.cards[card]
+
+    def show(self):
+        for k,v in self.cards.iteritems():
+            v.show()
+
 
 
 class Player(object):
     def __init__(self, name, hero):
-        self.hand = []
+        self.hand = {}
         self.mana = 0
         self.name = name
         self.hero = hero
@@ -105,17 +136,23 @@ class Player(object):
     def getTable(self):
         return self.table
 
-    def playCard(self):
-        cardToBePlayed = self.hand[0]
-        self.table.setCard(cardToBePlayed)
-        self.hand.pop(0)
+    def playCard(self, card):
+        d = {}
+        if card in self.hand:
+            cardToBePlayed = self.hand[card]
+
+            self.hand.pop(card)
+            d = {card:cardToBePlayed}
+            self.table.addCard(d)
+
+        return d
 
     def draw(self, deck):
-        self.hand.append(deck.drawCard())
+        self.hand.update(deck.drawCard())
         return self
     def showHand(self):
-        for card in self.hand:
-            card.show()
+        for key,value in self.hand.iteritems():
+            value.show()
 
     def getHand(self):
         return self.hand
@@ -127,20 +164,60 @@ class Player(object):
     def showInfo(self):
         print "hero = {} mana = {}".format(self.hero,self.mana)
 
+
+    def attack(self,card1, card2):
+        card1Attack = (card1.getHealth() - card2.getAttack())
+        card2Attack = (card2.getHealth() - card1.getAttack())
+        card1.setHealth(card1Attack)
+        card2.setHealth(card2Attack)
+        h = {}
+        d = self.table.getCards()
+        for k,v in d.iteritems():
+            if v.getHealth()<=1:
+                h[k]=v
+        self.table.removeCards(h)
+
+
+
 deck = Deck()
 
-deck.shuffle()
+deck.shuffle2()
 
 bob = Player("bob", "Shaman")
 bilbo = Player("bilbo", "Warlock")
+
 bob.draw(deck).draw(deck).draw(deck)
 bob.showInfo()
-print "hand"
+print "bob hand"
 bob.showHand()
-print "table"
-bob.getTable().showTable()
-bob.playCard()
-print "hand"
+try:
+    card1 = str(raw_input("pick a card to play for example: S8 = 8 of spades "))
+except:
+    print"error"
+
+bob.playCard(card1)
+print "bob hand"
 bob.showHand()
-print "table"
-bob.getTable().showTable()
+
+
+##Bilbo setup
+bilbo.draw(deck).draw(deck).draw(deck)
+bilbo.showInfo()
+print "bilbos hand"
+bilbo.showHand()
+
+card2 = random.choice(bilbo.getHand().keys())
+bilbo.playCard(card2)
+print "bilbos table"
+bilbo.getTable().show()
+
+print "bob table"
+bob.getTable().show()
+
+print "cards are attacking"
+bob.attack(bob.getTable().getCard(card1),bilbo.getTable().getCard(card2))
+print "bilbos table"
+bilbo.getTable().show()
+
+print "bob table"
+bob.getTable().show()

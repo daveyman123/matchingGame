@@ -119,7 +119,7 @@ class Card(Deck):
             for k,v in card.iteritems():
                 if k == card[k]:
                     self.getCards()[k] = card[k]
-        
+
 
 
 
@@ -194,7 +194,7 @@ class Player(Board):
     def playCard(self):
         card = 0
         while card not in self.hand:
-            card = raw_input("enter a card in your hand you want to play into the main playing zone ")
+            card = raw_input("enter a card in your hand you want to play into the main playing zone. for exampe S8 is the 8 of spades ")
 
         if card in self.hand:
             cardToBePlayed = self.hand[card]

@@ -1,42 +1,15 @@
 import random
-
-class Card(object):
-    def __init__(self,suit,val,mana,health, attack):
-
-        self.suit = suit
-        self.value = val
-        self.mana = mana
-
-        self.health = health
-        self.attack = attack
-
-
-    def getHealth(self):
-        return self.health
-    def getMana(self):
-        return self.Mana
-    def getAttack(self):
-        return self.health
-    def setHealth(self,health):
-        self.health = health
-
-    def setAttack(self, attack):
-        self.attack = attack
-
-    def show(self):
-        print "{} of {} with {} mana {} health {} attack".format(self.value,self.suit,self.mana,self.health,self.attack)
-
-
-
+import time
 
 class Deck(object):
     def __init__(self):
         self.cards = {}
 
 
-        self.build()
+
 
     def build(self):
+        d = {}
         for s in ("S", "C", "D", "H"):
             for v in range (1,14):
 
@@ -66,15 +39,20 @@ class Deck(object):
 
 
 
-                self.cards[s + str(v)]=Card(s, v, mana,health,attack)
+                d[s + str(v)]=Card(s, v, mana,health,attack)
+        return d
 
-    def getCards(self):
-        return self.cards
+    def setBuild(self):
+        self.cards = self.build()
 
+# maybe use later also use iteritems when iterating over dictionary
+    def getCard(self,cardKey):
+        for k,v in self.mpzCards.iteritems():
+            return v
 
     def show(self):
         for k,v in self.cards.iteritems():
-            v.show()
+            print v.show()
 
 
     def shuffle2(self):
@@ -85,6 +63,66 @@ class Deck(object):
 
 
 
+    def getCards(self):
+        return self.cards
+
+    def rebuildCards(self,hand,mpzCards):
+        d = {}
+        d = self.build()
+        for k,v in hand.iteritems():
+            if hand[k] == d[k]:
+                hand[v] = self.cards[v]
+        for k,v in mpzCards.iteritems():
+            if mpzCards[k] == d[k]:
+                mpzCards[v] == self.cards[v]
+
+
+class Card(Deck):
+    def __init__(self,suit,val,mana,health, attack):
+        super(Card, self).__init__()
+        self.self = self
+        self.suit = suit
+        self.value = val
+        self.mana = mana
+
+        self.health = health
+        self.attack = attack
+
+
+    def getHealth(self):
+        return self.health
+    def getMana(self):
+        return self.Mana
+    def getAttack(self):
+        return self.health
+    def setHealth(self,health):
+        self.health = health
+
+    def setAttack(self, attack):
+        self.attack = attack
+
+    def show(self):
+        return "{} of {} with {} mana {} health {} attack".format(self.value,self.suit,self.mana,self.health,self.attack)
+
+    def attacking(self, card2):
+        card1 = self
+        card1Attack = (card1.getHealth() - card2.getAttack())
+        card2Attack = (card2.getHealth() - card1.getAttack())
+        card1.setHealth(card1Attack)
+        card2.setHealth(card2Attack)
+        self.changeCard(card1)
+        self.changeCard(card2)
+
+    def changeCard(self,card):
+
+        for k,v in self.getCards().iteritems():
+            for k,v in card.iteritems():
+                if k == card[k]:
+                    self.getCards()[k] = card[k]
+        
+
+
+
 #    def shuffle(self):
 #        for i in range(len(self.cards)-1, 0, -1):
 #            r = random.randint(0,i)
@@ -92,40 +130,45 @@ class Deck(object):
 
 
 
-class Hand(object):
-    def __init__(self):
-        self.hand = {}
 
 class Board(object):
     def __init__(self):
+
         self.mpzCards = {}
 
 
         self.deck = Deck()
+        self.deck.setBuild()
+    def getCard(self,cardKey):
 
-    def minionPlayZone1(self):
-        return self.mpz1Cards
+        for k,v in self.mpzCards.iteritems():
+            if k == cardKey:
+                return v
 
 
     def removeCards(self, cards):
 
         for key in cards.keys():
-            del self.cards[key]
+            del self.mpzCards[key]
 
 
     def addCard(self, card):
-        self.cards.update(card)
+        self.mpzCards.update(card)
 
     def getCards(self):
 
-        return self.cards
+        return self.mpzCards
 
-    def getCard(self,card):
-        return self.cards[card]
 
-    def show(self):
-        for k,v in self.cards.iteritems():
-            v.show()
+
+    def showCards(self, cardsToShow):
+        for k,v in cardsToShow.iteritems():
+            print v.show()
+
+    # def rebuildCards(self):
+    #
+    #     self.deck.rebuildCards(self.hand,self.mpzCards)
+
 
     # def combine(self):
     #     return self.player1.getTable().getCards().update(self.player2.getTable().getCards())
@@ -148,24 +191,34 @@ class Player(Board):
     def getTable(self):
         return self.table
 
-    def playCard(self, card):
-        input = raw_input("enter a card")
-        d = {}
+    def playCard(self):
+        card = 0
+        while card not in self.hand:
+            card = raw_input("enter a card in your hand you want to play into the main playing zone ")
+
         if card in self.hand:
             cardToBePlayed = self.hand[card]
 
             self.hand.pop(card)
             self.cardToBePlayed = {card:cardToBePlayed}
-            self.mpzCards.addCard(d)
+            self.addCard(self.cardToBePlayed)
+    def playRandomCard(self):
 
-        return d
+        card = random.choice(self.hand.keys())
+        cardToBePlayed = self.hand[card]
+
+        self.hand.pop(card)
+        self.cardToBePlayed = {card:cardToBePlayed}
+        self.addCard(self.cardToBePlayed)
+
+
 
     # def draw(self, deck):
     #     self.hand.update(deck.drawCard())
     #     return self
     def showHand(self):
         for key,value in self.hand.iteritems():
-            value.show()
+            print value.show()
 
     def getHand(self):
         return self.hand
@@ -187,7 +240,44 @@ class Player(Board):
         self.hand.update(self.card)
 
 
+    def remove(self):
+        h = {}
+        for k,v in self.mpzCards.iteritems():
+            if v.getHealth()<=1:
+                h[k]=v
+                print v.show() + " was removed from play because it died"
+        self.removeCards(h)
 
+
+    def attacking(self,player):
+        cardAttack = raw_input("select the card you want to attack with ")
+        cardDefend = raw_input("in the opposing play zone select the card you want to attack ")
+
+        cardAttack = self.getCard(cardAttack)
+        cardDefend = player.getCard(cardDefend)
+
+
+        print cardAttack.show()
+        print cardDefend.show()
+
+        cardAttack.attacking(cardDefend)
+
+        for i in range(3):
+            print "..."
+            time.sleep(1)
+
+        self.remove()
+
+        self.deck.rebuildCards(self.hand,self.mpzCards)
+
+
+
+
+
+
+    def showMPZ(self):
+        print "the cards for {} in the MPZ are ".format(self.name)
+        self.showCards(self.mpzCards)
 
 
         # card2.getPlayer2().getTable().removeCards(h)
@@ -206,14 +296,40 @@ class Game(object):
     def run(self):
         gameOver = False
         deck = Deck()
+        deck.setBuild()
         player1 = Player("bob", "warlock")
         player2 = Player("bilbo", "shaman")
         while gameOver == False:
             player1.mana += 1
             player1.showInfo()
             player1.drawCard()
+            player2.drawCard()
+
+#initial showing of cards
+
             player1.playerInfo()
+            print "player 1 hand"
             player1.showHand()
+            print "player 2 hand"
+            player2.showHand()
+            player1.showMPZ()
+            player2.showMPZ()
+
+#playing cards
+            player1.playCard()
+            player2.playRandomCard()
+
+            print "player 1 hand"
+            player1.showHand()
+            print "player 2 hand"
+            player2.showHand()
+            player1.showMPZ()
+            player2.showMPZ()
+
+#attacking
+            player1.attacking(player2)
+            player1.showMPZ()
+            player2.showMPZ()
             gameOver = True
 
 

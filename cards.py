@@ -52,7 +52,7 @@ class Deck(object):
 
     def show(self):
         for k,v in self.cards.iteritems():
-            print v.show()
+            print (v.show())
 
 
     def shuffle2(self):
@@ -163,7 +163,7 @@ class Board(object):
 
     def showCards(self, cardsToShow):
         for k,v in cardsToShow.iteritems():
-            print v.show()
+            print (v.show())
 
     # def rebuildCards(self):
     #
@@ -218,7 +218,7 @@ class Player(Board):
     #     return self
     def showHand(self):
         for key,value in self.hand.iteritems():
-            print value.show()
+            print (value.show())
 
     def getHand(self):
         return self.hand
@@ -228,7 +228,7 @@ class Player(Board):
         return self.hand.pop()
 
     def showInfo(self):
-        print "hero = {} mana = {}".format(self.hero,self.mana)
+        print ("hero = {} mana = {}".format(self.hero,self.mana))
 
     def drawCard(self):
 
@@ -245,7 +245,7 @@ class Player(Board):
         for k,v in self.mpzCards.iteritems():
             if v.getHealth()<=1:
                 h[k]=v
-                print v.show() + " was removed from play because it died"
+                print (v.show() + " was removed from play because it died")
         self.removeCards(h)
 
 
@@ -257,13 +257,13 @@ class Player(Board):
         cardDefend = player.getCard(cardDefend)
 
 
-        print cardAttack.show()
-        print cardDefend.show()
+        print (cardAttack.show())
+        print (cardDefend.show())
 
         cardAttack.attacking(cardDefend)
 
         for i in range(3):
-            print "..."
+            print ("...")
             time.sleep(1)
 
         self.remove()
@@ -276,14 +276,14 @@ class Player(Board):
 
 
     def showMPZ(self):
-        print "the cards for {} in the MPZ are ".format(self.name)
+        print ("the cards for {} in the MPZ are ".format(self.name))
         self.showCards(self.mpzCards)
 
 
         # card2.getPlayer2().getTable().removeCards(h)
 
     def playerInfo(self):
-        print "cards in player {}'s hand, mana left {}".format(self.name,self.mana)
+        print ("cards in player {}'s hand, mana left {}".format(self.name,self.mana))
 
 
 
@@ -308,9 +308,9 @@ class Game(object):
 #initial showing of cards
 
             player1.playerInfo()
-            print "player 1 hand"
+            print ("player 1 hand")
             player1.showHand()
-            print "player 2 hand"
+            print ("player 2 hand")
             player2.showHand()
             player1.showMPZ()
             player2.showMPZ()
@@ -319,9 +319,9 @@ class Game(object):
             player1.playCard()
             player2.playRandomCard()
 
-            print "player 1 hand"
+            print ("player 1 hand")
             player1.showHand()
-            print "player 2 hand"
+            print ("player 2 hand")
             player2.showHand()
             player1.showMPZ()
             player2.showMPZ()

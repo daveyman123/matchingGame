@@ -140,6 +140,8 @@ class Ship(arcade.Sprite, Ships):
     def setAttack(self, attack):
         self.attack = attack
 
+    def getShip(self):
+        return self.value,self.suit
     def show(self):
         return "{} of {} with {} mana {} health {} attack".format(self.value,self.suit,self.mana,self.health,self.attack)
 
@@ -271,25 +273,26 @@ class Player(Board):
 
 
     def attacking(self,player):
-        cardAttack = raw_input("select the card you want to attack with ")
-        cardDefend = raw_input("in the opposing play zone select the card you want to attack ")
+        # cardAttack = raw_input("select the card you want to attack with ")
+        # cardDefend = raw_input("in the opposing play zone select the card you want to attack ")
 
         cardAttack = self.getCard(cardAttack)
         cardDefend = player.getCard(cardDefend)
 
 
-        print (cardAttack.show())
-        print (cardDefend.show())
 
-        cardAttack.attacking(cardDefend)
-
-        for i in range(3):
-            print ("...")
-            time.sleep(1)
-
-        self.remove()
-
-        self.deck.rebuildCards(self.hand,self.mpzCards)
+        # print (cardAttack.show())
+        # print (cardDefend.show())
+        #
+        # cardAttack.attacking(cardDefend)
+        #
+        # for i in range(3):
+        #     print ("...")
+        #     time.sleep(1)
+        #
+        # self.remove()
+        #
+        # self.deck.rebuildCards(self.hand,self.mpzCards)
 
 
 
@@ -312,6 +315,46 @@ class Player(Board):
 
     def playerInfo(self):
         print ("cards in player {}'s hand, mana left {}".format(self.name,self.mana))
+
+# class Bullets(object):
+#     def __init__(self,selected_enemy,selected_player):
+#         for i in range(selected_player.getAttack())
+
+class Bullet(arcade.Sprite):
+    def __init__(self, selected_enemy, selected_player):
+        super().__init__("images/laserBlue01.png")
+
+
+
+        x_diff = selected_enemy.center_x - selected_player.center_x
+        y_diff = selected_enemy.center_y - selected_player.center_y
+        angle = math.atan2(y_diff, x_diff)
+
+        self.current_texture = 0
+
+        self.set_texture(self.current_texture)
+        self.center_x = selected_player.center_x
+        self.center_y = selected_player.center_y
+
+        # Angle the bullet sprite so it doesn't look like it is flying
+        # sideways.
+
+        self.angle = math.degrees(angle)
+        print(f"Bullet angle: {self.angle:.2f}")
+
+
+
+
+
+        # Taking into account the angle, calculate our change_x
+        # and change_y. Velocity is how fast the bullet travels.
+
+        self.change_x = math.cos(angle) * BULLET_SPEED
+        self.change_y = math.sin(angle) * BULLET_SPEED
+
+
+
+
 
 
 class Explosion(arcade.Sprite):
@@ -410,10 +453,11 @@ class MyGame(arcade.Window):
         self.enemy = None
         self.bullet_list = None
         self.selected_player = None
-
+        self.frame_count = 0
         # Set up the player info
         self.player_sprite = None
         self.score = 0
+        self.selected_player_attack = None
 
 
         #load sounds
@@ -432,13 +476,17 @@ class MyGame(arcade.Window):
 
     def buttonDraw(self):
 
-        self.xyz = self.player1.drawCard()
+        xyz = self.player1.drawCard()
 
-        self.player_list.append(self.xyz)
+        self.player_list.append(xyz)
     def setup(self):
         self.bulletToKill = []
         self.background = arcade.load_texture("images/stars.jpg")
         self.button_list = arcade.SpriteList()
+        self.fire = False
+        self.fire2 = False
+        self.finished_attack_enemy = False
+        self.finished_attack_player = False
 
         self.explosion_texture_list = []
         self.explosion_texture_list.append(arcade.load_texture("images/explosion6.png", scale=COIN_SCALE))
@@ -449,7 +497,14 @@ class MyGame(arcade.Window):
         self.explosion_texture_list.append(arcade.load_texture("images/explosion1.png", scale=COIN_SCALE))
         self.explosion_texture_list.append(arcade.load_texture("images/explosion0.png", scale=COIN_SCALE))
 
-
+        self.explosion_texture_list2 = []
+        self.explosion_texture_list2.append(arcade.load_texture("images/explosion6.png", scale=COIN_SCALE))
+        self.explosion_texture_list2.append(arcade.load_texture("images/explosion5.png", scale=COIN_SCALE))
+        self.explosion_texture_list2.append(arcade.load_texture("images/explosion4.png", scale=COIN_SCALE))
+        self.explosion_texture_list2.append(arcade.load_texture("images/explosion3.png", scale=COIN_SCALE))
+        self.explosion_texture_list2.append(arcade.load_texture("images/explosion2.png", scale=COIN_SCALE))
+        self.explosion_texture_list2.append(arcade.load_texture("images/explosion1.png", scale=COIN_SCALE))
+        self.explosion_texture_list2.append(arcade.load_texture("images/explosion0.png", scale=COIN_SCALE))
 
         self.coin_texture_list = []
         self.coin_texture_list.append(arcade.load_texture("images/gold_1.png", scale=COIN_SCALE))
@@ -457,8 +512,14 @@ class MyGame(arcade.Window):
         self.coin_texture_list.append(arcade.load_texture("images/gold_3.png", scale=COIN_SCALE))
         self.coin_texture_list.append(arcade.load_texture("images/gold_4.png", scale=COIN_SCALE))
         self.explosion = Explosion()
+        self.explosion_player = Explosion()
+
+        self.selected_enemy_attack = 0
 
         self.explosion_list = arcade.SpriteList()
+        self.explosion_list_player = arcade.SpriteList()
+
+        self.explosion_list_player.append(self.explosion_player)
 
         self.explosion_list.append(self.explosion)
 
@@ -468,6 +529,7 @@ class MyGame(arcade.Window):
         self.button.center_x = 500
         self.button.center_y = 100
 
+        self.bullet_list_enemy = arcade.SpriteList()
         self.buttonList = arcade.SpriteList()
         self.buttonSprite = arcade.Sprite("mpz1_rect.png", SPRITE_SCALING_PLAYER2)
         self.buttonSprite.center_x = 300
@@ -481,10 +543,12 @@ class MyGame(arcade.Window):
         self.mpz2_list = []
 
 
-        self.selected_enemy_list = []
+        self.selected_enemy_list = arcade.SpriteList()
         self.selected_player_list = []
         self.hit_list = []
         # Sprite lists
+        self.bullet = arcade.Sprite("images/laserBlue01.png")
+        self.bullet_enemy = arcade.Sprite("images/laserBlue01.png")
 
         self.enemy_list = arcade.SpriteList()
         self.player_list = arcade.SpriteList()
@@ -524,12 +588,12 @@ class MyGame(arcade.Window):
         enemy_ship2.center_y = 350
 
 
-        x = 55
-        for i in self.player_list:
-
-            i.center_x = x
-            i.center_y = 55
-            x += 55
+        # x = 55
+        # for i in self.player_list:
+        #
+        #     i.center_x = x
+        #     i.center_y = 55
+        #     x += 55
 
         # Create cursor
         self.cursor_sprite = arcade.Sprite("cursor.png", SPRITE_SCALING_CURSOR)
@@ -557,13 +621,15 @@ class MyGame(arcade.Window):
                                       SCREEN_WIDTH, SCREEN_HEIGHT, self.background)
         # self.coin_list.draw()
         self.player_list.draw()
-        self.bullet_list.draw()
+        self.bullet_list_enemy.draw()
         self.enemy_list.draw()
         self.cursor_sprite.draw()
         self.mpz1_rect.draw()
         self.xyz.draw()
         self.button.draw()
         self.explosion_list.draw()
+        self.bullet_list.draw()
+        self.explosion_list_player.draw()
 
 
         #x = arcade.sprite_list.SpriteList(self.mpz1)
@@ -572,10 +638,10 @@ class MyGame(arcade.Window):
         output = f"Score: {self.score}"
         # for i in self.player_list:
         #     arcade.draw_text(str(i.getAttack()), 10,20,arcade.color.WHITE, 14)
-        if self.selected_player != None:
-            print("here6")
-            arcade.draw_text("Selected Ship has " + str(self.selected_player.getAttack()) + " Attack, "+str(self.selected_player.getHealth()) +
-                " Health and Costs " + str(self.selected_player.getMana()) + " Fuel", 10,20,arcade.color.WHITE, 14)
+        if len(self.selected_player_list) > 0:
+
+            arcade.draw_text("Selected Ship has " + str(self.selected_player_list[-1].getAttack()) + " Attack, "+str(self.selected_player_list[-1].getHealth()) +
+                " Health and Costs " + str(self.selected_player_list[-1].getMana()) + " Fuel", 10,20,arcade.color.WHITE, 14)
 
     def on_mouse_motion(self, x, y, dx, dy):
         """ Handle Mouse Motion """
@@ -584,11 +650,17 @@ class MyGame(arcade.Window):
             start_y = self.selected_player.center_y
 
 
+
             # Get from the mouse the destination location for the bullet
             # IMPORTANT! If you have a scrolling screen, you will also need
             # to add in self.view_bottom and self.view_left.
-            dest_x = x
-            dest_y = y
+            if self.selected_enemy != None and self.fire == True:
+                dest_x = self.selected_enemy.center_x
+                dest_y = self.selected_enemy.center_y
+            else:
+
+                dest_x = x
+                dest_y = y
 
             # Do math to calculate how to get the bullet to the destination.
             # Calculation the angle in radians between the start points
@@ -599,7 +671,10 @@ class MyGame(arcade.Window):
             self.selected_player.angle = angle
             #self.selected_player.rotate_point(dest_x,dest_y,start_x,start_y,angle)
         # Move the center of the player sprite to match the mouse x, y
+
+
         else:
+
             for i in self.player_list:
                 i.angle = 0
 
@@ -632,8 +707,8 @@ class MyGame(arcade.Window):
                 self.buttonDraw()
         # self.mpz2_list = arcade.check_for_collision_with_list(self.mpz1_rect, self.mpz2_list)
         self.selected_enemy_list = arcade.check_for_collision_with_list(self.cursor_sprite, self.enemy_list)
-        bullet = arcade.Sprite("images/laserBlue01.png", 1)
-        self.bullet_list.append(bullet)
+
+
 
 
         if len(self.hit_list) > 0:
@@ -653,41 +728,18 @@ class MyGame(arcade.Window):
 
             if len(self.mpz2_list) > 0 and len(self.selected_enemy_list) > 0:
                 self.selected_enemy = self.selected_enemy_list[0]
+                self.selected_enemy_attack = self.selected_enemy.getAttack()
 
                 print ("here3")
-                x_diff = self.selected_enemy.center_x - self.selected_player.center_x
-                y_diff = self.selected_enemy.center_y - self.selected_player.center_y
-                angle = math.atan2(y_diff, x_diff)
+                self.fire = True
 
-                bullet.center_x = self.selected_player.center_x
-                bullet.center_y = self.selected_player.center_y
-
-                # Angle the bullet sprite so it doesn't look like it is flying
-                # sideways.
-                bullet.angle = math.degrees(angle)
-                print(f"Bullet angle: {bullet.angle:.2f}")
+                self.selected_player_attack = self.selected_player.getAttack()
+            elif len(self.selected_enemy_list) == 0 and self.selected_player !=None:
+                if len(self.hit_list) == 0:
+                    self.selected_player_list = []
+                    self.selected_player = None
 
 
-                arcade.play_sound(self.gun_sound)
-
-                self.gun_sound = arcade.sound.load_sound("sounds/laser1.wav")
-
-
-                # Taking into account the angle, calculate our change_x
-                # and change_y. Velocity is how fast the bullet travels.
-
-                bullet.change_x = math.cos(angle) * BULLET_SPEED
-                bullet.change_y = math.sin(angle) * BULLET_SPEED
-
-
-
-                self.selected_player_list = []
-                self.selected_player = None
-
-
-        if len(self.hit_list) == 0:
-            self.selected_player_list = []
-            self.selected_player = None
 
         # self.selected_button = arcade.check_for_collision_with_list(self.cursor_sprite, self.buttonList)
         # if len(self.selected_button) > 0:
@@ -695,6 +747,7 @@ class MyGame(arcade.Window):
 
     def on_mouse_release(self, x,y,buttons,modifiers):
         if self.selected_player not in self.mpz1_list:
+
             self.selected_player = None
             self.mpz1_list = arcade.check_for_collision_with_list(self.mpz1_rect, self.player_list)
         else:
@@ -727,28 +780,133 @@ class MyGame(arcade.Window):
 
     def update(self, delta_time):
         """ Movement and game logic """
-
+        self.frame_count += 1
+        for i in self.selected_enemy_list:
+            i.update()
+        self.bullet_list_enemy.update()
+        self.bullet_list.update()
+        self.player_list.update()
         self.button.update()
         self.explosion_list.update()
-        if len(self.bullet_list) > 0:
-
-            for x in self.selected_enemy_list:
-
-                if arcade.check_for_collision(self.bullet_list[-1],x):
-
-                    self.bullet_list[-1].kill()
+        self.explosion_list_player.update()
 
 
 
-                    self.explosion = Explosion(x)
-                    self.explosion.setTexture(self.explosion_texture_list)
-                    self.explosion_list.append(self.explosion)
-                    arcade.play_sound(self.hit_sound)
+
+        if self.fire ==True:
+            if self.frame_count % (33) == 0:
+                if self.selected_player_attack >0 and self.selected_enemy != None:
+
+                    if self.selected_player != None:
+
+                        self.bullet = Bullet(self.selected_enemy,self.selected_player)
 
 
-                    self.hit_sound = arcade.sound.load_sound("sounds/phaseJump1.wav")
+                        self.bullet_list.append(self.bullet)
+
+                        arcade.play_sound(self.gun_sound)
+
+                        self.gun_sound = arcade.sound.load_sound("sounds/laser1.wav")
+
+                        self.selected_player_attack -= 1
+                    else:
+                        print("select a player dummy")
+
+                else:
+                    self.finished_attack_player = True
+                # else:
+                #     self.fire = False
+                #     self.selected_player.angle = 0
+                #     self.selected_player = None
+
+            if self.frame_count % (77) == 0:
+                if self.selected_enemy_attack > 0 and self.selected_player != None:
+                    if self.selected_enemy != None:
+                        self.bullet_enemy = Bullet(self.selected_player, self.selected_enemy)
 
 
+                        self.bullet_list_enemy.append(self.bullet_enemy)
+
+
+                        arcade.play_sound(self.gun_sound)
+
+                        self.gun_sound = arcade.sound.load_sound("sounds/laser1.wav")
+
+                        self.selected_enemy_attack -= 1
+                    else:
+                        print("select an enemy dummy")
+                else:
+                    self.finished_attack_enemy = True
+
+        if len(self.selected_enemy_list) > 0:
+
+            if len(self.bullet_list)>0 and arcade.check_for_collision(self.bullet_list[-1],self.selected_enemy_list[0]):
+
+                self.bullet_list[-1].kill()
+
+
+
+                self.selected_enemy_list[0].setHealth(self.selected_enemy_list[0].getHealth() - 1)
+                self.explosion = Explosion(self.selected_enemy)
+                self.explosion_list.append(self.explosion)
+
+                self.explosion = Explosion(self.selected_enemy_list[0])
+                self.explosion.setTexture(self.explosion_texture_list)
+                self.explosion_list.append(self.explosion)
+
+                self.hit_sound = arcade.sound.load_sound("sounds/phaseJump1.wav")
+                arcade.play_sound(self.hit_sound)
+
+
+                self.hit_sound = arcade.sound.load_sound("sounds/phaseJump1.wav")
+
+                    # self.fire = False
+                    # if self.selected_player != None:
+                    #     self.selected_player.angle = 0
+                    #     self.selected_player = None
+
+            if len(self.bullet_list_enemy) > 0 and arcade.check_for_collision(self.bullet_list_enemy[-1],self.selected_player):
+                print (len(self.bullet_list_enemy))
+                self.bullet_list_enemy.remove(self.bullet_list_enemy[-1])
+                self.bullet_list_enemy = arcade.SpriteList()
+                self.selected_player.setHealth(self.selected_player.getHealth()-1)
+
+                self.explosion_player.setTexture(self.explosion_texture_list2)
+
+                self.explosion_player = Explosion(self.selected_player)
+                self.explosion_list_player.append(self.explosion_player)
+                self.explosion_player = Explosion(self.selected_player)
+
+                self.explosion_player.setTexture(self.explosion_texture_list2)
+                self.explosion_list_player.append(self.explosion_player)
+
+                self.hit_sound = arcade.sound.load_sound("sounds/phaseJump1.wav")
+                arcade.play_sound(self.hit_sound)
+
+
+                self.hit_sound = arcade.sound.load_sound("sounds/phaseJump1.wav")
+            if self.selected_player != None and self.selected_enemy != None and self.finished_attack_enemy == True and self.finished_attack_player == True:
+                if self.selected_player.getHealth() <= 0:
+                    print("here 12")
+
+                    if self.selected_player in self.player_list:
+                        self.player_list.remove(self.selected_player)
+                        self.selected_player = None
+
+                    self.selected_player_list = arcade.SpriteList()
+                if self.selected_enemy_list[0].getHealth() <= 0:
+
+                    self.selected_enemy_list[0].kill()
+                    self.selected_enemy_list = arcade.SpriteList()
+                self.finished_attack_enemy = False
+                self.finished_attack_player = False
+                self.selected_player = None
+                self.selected_enemy = None
+                self.fire = False
+                        # self.fire = False
+                        # if self.selected_player != None:
+                        #     self.selected_player.angle = 0
+                        #     self.selected_player = None
 
 
         # Call update on all sprites (The sprites don't do much in this
@@ -761,10 +919,38 @@ class MyGame(arcade.Window):
         #
         # self.coin_list.update()
         # self.coin_list.update_animation()
-        self.bullet_list.update()
 
         # Generate a list of all sprites that collided with the player.
         self.hit_list = arcade.check_for_collision_with_list(self.cursor_sprite, self.player_list)
+
+        self.hit_list = arcade.check_for_collision_with_list(self.cursor_sprite, self.player_list)
+
+
+        if self.selected_player != None and self.selected_enemy != None:
+            start_x = self.selected_enemy.center_x
+            start_y = self.selected_enemy.center_y
+
+
+
+            # Get from the mouse the destination location for the bullet
+            # IMPORTANT! If you have a scrolling screen, you will also need
+            # to add in self.view_bottom and self.view_left.
+
+            dest_x = self.selected_player.center_x
+            dest_y = self.selected_player.center_y
+
+
+            # Do math to calculate how to get the bullet to the destination.
+            # Calculation the angle in radians between the start points
+            # and end points. This is the angle the bullet will travel.
+            x_diff = dest_x - start_x
+            y_diff = dest_y - start_y
+            angle = math.degrees(math.atan2(y_diff,x_diff))-90
+            self.selected_enemy.angle = angle
+            #self.selected_player.rotate_point(dest_x,dest_y,start_x,start_y,angle)
+        # Move the center of the player sprite to match the mouse x, y
+
+
 
         # Loop through each colliding sprite, remove it, and add to the score.
 
